@@ -1151,7 +1151,7 @@ Erstelle den Bericht auf Deutsch. Verwende Ampel-Emoji (🟢🟡🔴). Formatier
 async function callLLM(prompt) {
     const apiKey = __API_KEY__ || document.getElementById('apiKey').value;
     const model = 'gpt-4o';
-    if (!apiKey || apiKey === '%%OPENAI_API_KEY%%') throw new Error('API Key nicht konfiguriert. Bitte Coolify Environment Variable setzen.');
+    if (!apiKey || apiKey.includes('%%OPENAI')) throw new Error('API Key nicht konfiguriert. Bitte Coolify Environment Variable setzen.');
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
