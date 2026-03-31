@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PM Statusbericht-Generator | GPM Focus 2025</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #0f172a;
+            --primary-light: #1e293b;
+            --accent: #e6007e;
+            --accent-light: #f472b6;
+            --accent-glow: rgba(230, 0, 126, 0.15);
+            --lime: #cdd500;
+            --lime-soft: #e8eb4a;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #0f172a;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --border: #e2e8f0;
+            --border-light: #f1f5f9;
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --warning: #f59e0b;
+            --warning-bg: #fffbeb;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --info: #3b82f6;
+            --info-bg: #eff6ff;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+            --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
+            --shadow-glow: 0 0 30px rgba(230, 0, 126, 0.12);
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ─── HEADER ─── */
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .header-inner {
+            max-width: 1500px;
+            margin: 0 auto;
+            padding: 1.2rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 1rem; }
+
+        .header-logo {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem; font-weight: 800;
+            box-shadow: 0 0 20px rgba(230,0,126,0.3);
+        }
+
+        .header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.02em; }
+        .header .subtitle { font-size: 0.78rem; color: var(--text-muted); margin-top: 0.1rem; font-weight: 400; }
+
+        .header-right { display: flex; align-items: center; gap: 1rem; }
+
+        .badge {
+            background: linear-gradient(135deg, var(--accent), #c4006a);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+        }
+
+        /* ─── API KEY BAR ─── */
+        .api-key-bar {
+            background: var(--primary-light);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 0.5rem 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .api-key-bar label { margin: 0; white-space: nowrap; font-weight: 600; color: #cbd5e1; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .api-key-bar input, .api-key-bar select {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-family: inherit;
+        }
+
+        .api-key-bar input { max-width: 320px; }
+        .api-key-bar select { max-width: 180px; }
+        .api-key-bar input::placeholder { color: var(--text-muted); }
+        .api-key-bar input:focus, .api-key-bar select:focus { outline: none; border-color: var(--accent); }
+        .api-key-bar .hint { font-size: 0.7rem; color: var(--text-muted); }
+
+        .api-bar-wrap { background: var(--primary-light); }
+
+        /* ─── NAV TABS ─── */
+        .nav-tabs {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            display: flex;
+            gap: 0;
+            max-width: 1500px;
+            margin: 0 auto;
+        }
+
+        .nav-tab-wrap { max-width: 1500px; margin: 0 auto; background: white; border-bottom: 1px solid var(--border); }
+
+        .nav-tab {
+            padding: 0.9rem 1.5rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .nav-tab:hover { color: var(--text); }
+        .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+
+        /* ─── CONTAINER ─── */
+        .container { max-width: 1500px; margin: 0 auto; padding: 1.5rem 2rem; }
+
+        .view { display: none; }
+        .view.active { display: block; }
+
+        /* ─── LAYOUT ─── */
+        .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        @media (max-width: 1200px) { .layout { grid-template-columns: 1fr; } }
+
+        /* ─── CARDS ─── */
+        .card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border);
+            transition: box-shadow 0.2s;
+        }
+
+        .card:hover { box-shadow: var(--shadow); }
+
+        .card h2 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .card h2 .icon {
+            width: 28px; height: 28px;
+            background: var(--border-light);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.95rem;
+        }
+
+        /* ─── FORM ELEMENTS ─── */
+        label {
+            display: block;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.3rem;
+            margin-top: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        label:first-of-type { margin-top: 0; }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.65rem 0.9rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            font-family: inherit;
+            transition: all 0.2s;
+            background: white;
+            color: var(--text);
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        textarea { resize: vertical; min-height: 52px; }
+
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+        .row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.8rem; }
+
+        /* ─── AMPEL ─── */
+        .ampel-group { display: flex; gap: 0.4rem; margin-top: 0.3rem; }
+
+        .ampel-btn {
+            flex: 1;
+            padding: 0.55rem 0.3rem;
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            transition: all 0.15s;
+            font-family: inherit;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .ampel-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+
+        .ampel-btn.green { color: var(--success); }
+        .ampel-btn.green.active { background: var(--success-bg); border-color: var(--success); box-shadow: 0 0 12px rgba(16,185,129,0.15); }
+        .ampel-btn.yellow { color: var(--warning); }
+        .ampel-btn.yellow.active { background: var(--warning-bg); border-color: var(--warning); box-shadow: 0 0 12px rgba(245,158,11,0.15); }
+        .ampel-btn.red { color: var(--danger); }
+        .ampel-btn.red.active { background: var(--danger-bg); border-color: var(--danger); box-shadow: 0 0 12px rgba(239,68,68,0.15); }
+
+        /* ─── MILESTONES & RISKS ─── */
+        .milestone-list, .risk-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem; }
+
+        .milestone-item {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .milestone-item input, .milestone-item select {
+            font-size: 0.82rem;
+            padding: 0.45rem 0.6rem;
+        }
+
+        .risk-item {
+            display: grid;
+            grid-template-columns: 2fr 1.5fr auto;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn-add {
+            background: none;
+            border: 1.5px dashed var(--border);
+            padding: 0.5rem 0.8rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            transition: all 0.2s;
+            font-family: inherit;
+            font-weight: 500;
+        }
+
+        .btn-add:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+        .btn-remove {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+
+        .btn-remove:hover { background: var(--danger-bg); color: var(--danger); }
+
+        /* ─── OUTPUT SECTION ─── */
+        .output-section { position: sticky; top: 120px; }
+
+        .audience-tabs {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 1rem;
+            background: var(--border-light);
+            padding: 0.25rem;
+            border-radius: 12px;
+        }
+
+        .audience-tab {
+            flex: 1;
+            padding: 0.65rem 0.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.78rem;
+            font-weight: 600;
+            background: transparent;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+            text-align: center;
+            font-family: inherit;
+        }
+
+        .audience-tab:hover { color: var(--text); }
+
+        .audience-tab.active {
+            background: white;
+            color: var(--text);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ─── DENSITY TOGGLE ─── */
+        .density-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+            padding: 0.6rem 0.9rem;
+            background: var(--border-light);
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 40px; height: 22px;
+            background: var(--border);
+            border-radius: 11px;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch.active { background: var(--accent); }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px; left: 2px;
+            width: 18px; height: 18px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+
+        .toggle-switch.active::after { transform: translateX(18px); }
+
+        /* ─── BUTTONS ─── */
+        .generate-btn {
+            width: 100%;
+            padding: 0.85rem;
+            background: linear-gradient(135deg, var(--accent) 0%, #c4006a 100%);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+            font-family: inherit;
+            letter-spacing: -0.01em;
+        }
+
+        .generate-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-glow), var(--shadow); }
+        .generate-btn:active { transform: translateY(0); }
+        .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .generate-btn.loading { animation: shimmer 2s infinite; }
+
+        @keyframes shimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .output-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 1.5rem;
+            min-height: 300px;
+            font-size: 0.88rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        .output-box h3 { color: var(--primary); margin: 1.2rem 0 0.4rem; font-size: 0.95rem; letter-spacing: -0.01em; }
+        .output-box h3:first-child { margin-top: 0; }
+
+        .ampel-inline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.15rem 0.6rem;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.03em;
+        }
+
+        .ampel-green { background: var(--success-bg); color: var(--success); }
+        .ampel-yellow { background: var(--warning-bg); color: var(--warning); }
+        .ampel-red { background: var(--danger-bg); color: var(--danger); }
+
+        .actions-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 0.55rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: white;
+            color: var(--text);
+        }
+
+        .action-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+        .action-btn.primary {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .action-btn.primary:hover { background: var(--primary-light); }
+
+        .action-btn.accent {
+            background: var(--lime);
+            color: var(--primary);
+            border-color: var(--lime);
+            font-weight: 700;
+        }
+
+        .action-btn.accent:hover { filter: brightness(1.08); }
+
+        .placeholder-text {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 3rem 2rem;
+            font-size: 0.88rem;
+        }
+
+        .placeholder-text strong { color: var(--text-secondary); }
+
+        /* ─── DASHBOARD ─── */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 1100px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.3rem;
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .stat-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.2;
+        }
+
+        .stat-label {
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+            font-weight: 600;
+        }
+
+        .stat-card.green .stat-value { color: var(--success); }
+        .stat-card.yellow .stat-value { color: var(--warning); }
+        .stat-card.red .stat-value { color: var(--danger); }
+        .stat-card.blue .stat-value { color: var(--info); }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 1100px) { .charts-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 700px) { .charts-grid { grid-template-columns: 1fr; } }
+
+        .chart-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .chart-card h3 {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .chart-wrap {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+        }
+
+        /* ─── PDF HIDDEN CONTAINER ─── */
+        #pdfContent {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 794px;
+            background: white;
+            font-family: 'Inter', system-ui, sans-serif;
+            z-index: -1;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #pdfContent.pdf-rendering {
+            z-index: 9999;
+            opacity: 1;
+        }
+
+        #pdfContent .pdf-page {
+            padding: 40px;
+            width: 794px;
+            min-height: 1100px;
+        }
+
+        #pdfContent .pdf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid var(--accent);
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+
+        #pdfContent .pdf-header h1 { font-size: 20px; color: var(--primary); letter-spacing: -0.02em; }
+        #pdfContent .pdf-header .pdf-meta { font-size: 11px; color: var(--text-secondary); text-align: right; line-height: 1.6; }
+
+        #pdfContent .pdf-ampel-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        #pdfContent .pdf-ampel-box {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        #pdfContent .pdf-section { margin-bottom: 16px; }
+        #pdfContent .pdf-section h2 {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 4px;
+            margin-bottom: 8px;
+        }
+
+        #pdfContent .pdf-section p, #pdfContent .pdf-section li {
+            font-size: 11px;
+            line-height: 1.7;
+            color: var(--text);
+        }
+
+        #pdfContent .pdf-budget-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        #pdfContent .pdf-budget-box {
+            background: var(--border-light);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        #pdfContent .pdf-budget-box .val { font-size: 16px; font-weight: 800; color: var(--primary); }
+        #pdfContent .pdf-budget-box .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-top: 2px; }
+
+        #pdfContent .pdf-milestone-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        #pdfContent .pdf-milestone-table th {
+            background: var(--border-light);
+            padding: 6px 10px;
+            text-align: left;
+            font-weight: 700;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        #pdfContent .pdf-milestone-table td {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        #pdfContent .pdf-footer {
+            margin-top: 20px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 9px;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .pdf-status-dot {
+            display: inline-block;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+
+        .pdf-status-dot.green { background: var(--success); }
+        .pdf-status-dot.yellow { background: var(--warning); }
+        .pdf-status-dot.red { background: var(--danger); }
+        .pdf-status-dot.gray { background: var(--text-muted); }
+
+        /* ─── FOOTER ─── */
+        footer {
+            text-align: center;
+            padding: 2.5rem;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+
+        footer a { color: var(--accent); text-decoration: none; }
+
+        /* ─── SCROLLBAR ─── */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+<!-- ─── HEADER ─── -->
+<div class="header">
+    <div class="header-inner">
+        <div class="header-left">
+            <div class="header-logo">S</div>
+            <div>
+                <h1>PM Statusbericht-Generator</h1>
+                <div class="subtitle">Gleiche Fakten &middot; Drei Zielgruppen &middot; Ein Klick</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="badge">GPM Focus 2025 &middot; Workshop E</div>
+        </div>
+    </div>
+</div>
+
+<div class="api-bar-wrap">
+    <div class="api-key-bar">
+        <label>API Key</label>
+        <input type="password" id="apiKey" placeholder="sk-..." />
+        <select id="modelSelect">
+            <option value="gpt-4o-mini">GPT-4o mini</option>
+            <option value="gpt-4o" selected>GPT-4o</option>
+            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+        </select>
+        <span class="hint">Bleibt lokal im Browser</span>
+    </div>
+</div>
+
+<!-- ─── NAV ─── -->
+<div class="nav-tab-wrap">
+    <div class="nav-tabs" style="max-width:1500px;margin:0 auto;padding:0 2rem;">
+        <button class="nav-tab active" onclick="switchView(this, 'editor')">Eingabe & Bericht</button>
+        <button class="nav-tab" onclick="switchView(this, 'dashboard')">Dashboard</button>
+    </div>
+</div>
+
+<!-- ─── MAIN CONTENT ─── -->
+<div class="container">
+
+    <!-- ═══ VIEW: EDITOR ═══ -->
+    <div id="view-editor" class="view active">
+        <div class="layout">
+
+            <!-- LEFT: Input -->
+            <div>
+                <div class="card" style="margin-bottom:1rem;">
+                    <h2><span class="icon">📋</span> Projektdaten</h2>
+                    <label>Projektname</label>
+                    <input type="text" id="projectName" placeholder="z.B. Digitalisierung Kundenportal" />
+                    <div class="row">
+                        <div>
+                            <label>Projektleitung</label>
+                            <input type="text" id="projectLead" placeholder="Name" />
+                        </div>
+                        <div>
+                            <label>Berichtsdatum</label>
+                            <input type="date" id="reportDate" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div>
+                            <label>Projektphase</label>
+                            <select id="projectPhase">
+                                <option>Initiierung</option>
+                                <option>Planung</option>
+                                <option selected>Umsetzung</option>
+                                <option>Test / Abnahme</option>
+                                <option>Abschluss</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Gesamtfortschritt (%)</label>
+                            <input type="number" id="progress" min="0" max="100" placeholder="65" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:1rem;">
+                    <h2><span class="icon">🚦</span> Ampelstatus</h2>
+                    <label>Gesamtstatus</label>
+                    <div class="ampel-group" data-field="statusOverall">
+                        <button class="ampel-btn green" onclick="setAmpel(this)" data-value="gruen">Gruen</button>
+                        <button class="ampel-btn yellow" onclick="setAmpel(this)" data-value="gelb">Gelb</button>
+                        <button class="ampel-btn red" onclick="setAmpel(this)" data-value="rot">Rot</button>
+                    </div>
+                    <div class="row-3">
+                        <div>
+                            <label>Termine</label>
+                            <div class="ampel-group" data-field="statusTime">
+                                <button class="ampel-btn green" onclick="setAmpel(this)" data-value="gruen">G</button>
+                                <button class="ampel-btn yellow" onclick="setAmpel(this)" data-value="gelb">Y</button>
+                                <button class="ampel-btn red" onclick="setAmpel(this)" data-value="rot">R</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label>Budget</label>
+                            <div class="ampel-group" data-field="statusBudget">
+                                <button class="ampel-btn green" onclick="setAmpel(this)" data-value="gruen">G</button>
+                                <button class="ampel-btn yellow" onclick="setAmpel(this)" data-value="gelb">Y</button>
+                                <button class="ampel-btn red" onclick="setAmpel(this)" data-value="rot">R</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label>Qualitaet</label>
+                            <div class="ampel-group" data-field="statusQuality">
+                                <button class="ampel-btn green" onclick="setAmpel(this)" data-value="gruen">G</button>
+                                <button class="ampel-btn yellow" onclick="setAmpel(this)" data-value="gelb">Y</button>
+                                <button class="ampel-btn red" onclick="setAmpel(this)" data-value="rot">R</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom:1rem;">
+                    <h2><span class="icon">🎯</span> Meilensteine</h2>
+                    <div id="milestoneList" class="milestone-list">
+                        <div class="milestone-item">
+                            <input type="text" placeholder="Meilenstein-Name" />
+                            <input type="date" />
+                            <select>
+                                <option value="erledigt">Erledigt</option>
+                                <option value="in Arbeit" selected>In Arbeit</option>
+                                <option value="gefaehrdet">Gefaehrdet</option>
+                                <option value="offen">Offen</option>
+                            </select>
+                            <button class="btn-remove" onclick="this.parentElement.remove()">&times;</button>
+                        </div>
+                    </div>
+                    <button class="btn-add" onclick="addMilestone()">+ Meilenstein</button>
+                </div>
+
+                <div class="card" style="margin-bottom:1rem;">
+                    <h2><span class="icon">💰</span> Budget</h2>
+                    <div class="row-3">
+                        <div>
+                            <label>Plan (EUR)</label>
+                            <input type="number" id="budgetPlan" placeholder="500000" />
+                        </div>
+                        <div>
+                            <label>Ist (EUR)</label>
+                            <input type="number" id="budgetActual" placeholder="320000" />
+                        </div>
+                        <div>
+                            <label>Prognose (EUR)</label>
+                            <input type="number" id="budgetForecast" placeholder="480000" />
+                        </div>
+                    </div>
+                    <label>Kommentar</label>
+                    <textarea id="budgetComment" rows="2" placeholder="z.B. Erhoehte Lizenzkosten"></textarea>
+                </div>
+
+                <div class="card" style="margin-bottom:1rem;">
+                    <h2><span class="icon">⚠️</span> Risiken & Massnahmen</h2>
+                    <div id="riskList" class="risk-list">
+                        <div class="risk-item">
+                            <input type="text" placeholder="Risikobeschreibung" />
+                            <input type="text" placeholder="Massnahme" />
+                            <button class="btn-remove" onclick="this.parentElement.remove()">&times;</button>
+                        </div>
+                    </div>
+                    <button class="btn-add" onclick="addRisk()">+ Risiko</button>
+                </div>
+
+                <div class="card">
+                    <h2><span class="icon">📝</span> Freitext</h2>
+                    <label>Erfolge & Fortschritte</label>
+                    <textarea id="achievements" rows="2" placeholder="Was lief gut?"></textarea>
+                    <label>Blocker & Herausforderungen</label>
+                    <textarea id="blockers" rows="2" placeholder="Was blockiert?"></textarea>
+                    <label>Naechste Schritte</label>
+                    <textarea id="nextSteps" rows="2" placeholder="Was steht an?"></textarea>
+                </div>
+            </div>
+
+            <!-- RIGHT: Output -->
+            <div class="output-section">
+                <div class="card">
+                    <h2><span class="icon">📊</span> Generierter Statusbericht</h2>
+
+                    <div class="audience-tabs">
+                        <button class="audience-tab active" onclick="switchTab(this, 'team')">👥 Team</button>
+                        <button class="audience-tab" onclick="switchTab(this, 'steering')">🏛️ Lenkungsausschuss</button>
+                        <button class="audience-tab" onclick="switchTab(this, 'clevel')">👔 C-Level</button>
+                    </div>
+
+                    <div class="density-toggle">
+                        <div class="toggle-switch" id="densityToggle" onclick="toggleDensity()"></div>
+                        <span><strong>Kompakt-Modus</strong> &mdash; Reduzierte Informationsdichte</span>
+                    </div>
+
+                    <button class="generate-btn" id="generateBtn" onclick="generate()">
+                        Alle 3 Berichte generieren
+                    </button>
+
+                    <div id="output" class="output-box">
+                        <div class="placeholder-text">
+                            Projektdaten links eingeben, dann <strong>generieren</strong>.<br><br>
+                            <strong>Team:</strong> Detailliert &middot; technisch &middot; Aufgabenbezug<br>
+                            <strong>Lenkungsausschuss:</strong> Strukturiert &middot; entscheidungsorientiert<br>
+                            <strong>C-Level:</strong> Kompakt &middot; strategisch &middot; auf den Punkt
+                        </div>
+                    </div>
+
+                    <div class="actions-row">
+                        <button class="action-btn primary" onclick="copyReport()">📋 Kopieren</button>
+                        <button class="action-btn primary" onclick="downloadPDF()">📄 PDF Download</button>
+                        <button class="action-btn accent" onclick="loadExample()">⚡ Beispieldaten</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ VIEW: DASHBOARD ═══ -->
+    <div id="view-dashboard" class="view">
+
+        <div class="dashboard-grid" id="statCards">
+            <div class="stat-card blue">
+                <div class="stat-value" id="dashProgress">--</div>
+                <div class="stat-label">Fortschritt</div>
+            </div>
+            <div class="stat-card" id="dashBudgetCard">
+                <div class="stat-value" id="dashBudgetDelta">--</div>
+                <div class="stat-label">Budget-Abweichung</div>
+            </div>
+            <div class="stat-card" id="dashMilestoneCard">
+                <div class="stat-value" id="dashMilestoneDone">--</div>
+                <div class="stat-label">Meilensteine erledigt</div>
+            </div>
+            <div class="stat-card" id="dashRiskCard">
+                <div class="stat-value" id="dashRiskCount">--</div>
+                <div class="stat-label">Offene Risiken</div>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Fortschritt</h3>
+                <div class="chart-wrap"><canvas id="chartProgress"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3>Budget (Plan vs. Ist vs. Prognose)</h3>
+                <div class="chart-wrap"><canvas id="chartBudget"></canvas></div>
+            </div>
+            <div class="chart-card">
+                <h3>Meilenstein-Status</h3>
+                <div class="chart-wrap"><canvas id="chartMilestones"></canvas></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2><span class="icon">🚦</span> Ampel-Uebersicht</h2>
+            <div id="dashAmpelGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.8rem;margin-top:0.5rem;">
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- PDF HIDDEN RENDER TARGET -->
+<div id="pdfContent"></div>
+
+<footer>
+    GPM Focus 2025 &middot; Workshop E: PM KI Design Sprint &middot; <strong>Torsten Koerting</strong> & <strong>Anja Holz</strong>
+</footer>
+
+<script>
+// ─── STATE ───
+document.getElementById('reportDate').valueAsDate = new Date();
+const ampelState = {};
+let currentTab = 'team';
+let densityCompact = false;
+const reports = { team: '', steering: '', clevel: '' };
+const reportsRaw = { team: '', steering: '', clevel: '' };
+let charts = {};
+
+// ─── VIEW SWITCHING ───
+function switchView(btn, view) {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + view).classList.add('active');
+    if (view === 'dashboard') updateDashboard();
+}
+
+// ─── AMPEL ───
+function setAmpel(btn) {
+    const group = btn.parentElement;
+    const field = group.dataset.field;
+    group.querySelectorAll('.ampel-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    ampelState[field] = btn.dataset.value;
+}
+
+// ─── MILESTONES ───
+function addMilestone() {
+    const list = document.getElementById('milestoneList');
+    const item = document.createElement('div');
+    item.className = 'milestone-item';
+    item.innerHTML = `
+        <input type="text" placeholder="Meilenstein-Name" />
+        <input type="date" />
+        <select>
+            <option value="erledigt">Erledigt</option>
+            <option value="in Arbeit">In Arbeit</option>
+            <option value="gefaehrdet">Gefaehrdet</option>
+            <option value="offen">Offen</option>
+        </select>
+        <button class="btn-remove" onclick="this.parentElement.remove()">&times;</button>`;
+    list.appendChild(item);
+}
+
+// ─── RISKS ───
+function addRisk() {
+    const list = document.getElementById('riskList');
+    const item = document.createElement('div');
+    item.className = 'risk-item';
+    item.innerHTML = `
+        <input type="text" placeholder="Risikobeschreibung" />
+        <input type="text" placeholder="Massnahme" />
+        <button class="btn-remove" onclick="this.parentElement.remove()">&times;</button>`;
+    list.appendChild(item);
+}
+
+// ─── DENSITY TOGGLE ───
+function toggleDensity() {
+    densityCompact = !densityCompact;
+    document.getElementById('densityToggle').classList.toggle('active', densityCompact);
+}
+
+// ─── TAB SWITCHING ───
+function switchTab(btn, tab) {
+    document.querySelectorAll('.audience-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    currentTab = tab;
+    if (reports[tab]) {
+        document.getElementById('output').innerHTML = reports[tab];
+    }
+}
+
+// ─── DATA COLLECTION ───
+function collectData() {
+    const milestones = [];
+    document.querySelectorAll('.milestone-item').forEach(item => {
+        const inputs = item.querySelectorAll('input, select');
+        if (inputs[0].value) {
+            milestones.push({ name: inputs[0].value, date: inputs[1].value, status: inputs[2].value });
+        }
+    });
+    const risks = [];
+    document.querySelectorAll('.risk-item').forEach(item => {
+        const inputs = item.querySelectorAll('input');
+        if (inputs[0].value) {
+            risks.push({ description: inputs[0].value, mitigation: inputs[1].value });
+        }
+    });
+    return {
+        projectName: document.getElementById('projectName').value,
+        projectLead: document.getElementById('projectLead').value,
+        reportDate: document.getElementById('reportDate').value,
+        projectPhase: document.getElementById('projectPhase').value,
+        progress: document.getElementById('progress').value,
+        ampel: { ...ampelState },
+        milestones, risks,
+        budgetPlan: document.getElementById('budgetPlan').value,
+        budgetActual: document.getElementById('budgetActual').value,
+        budgetForecast: document.getElementById('budgetForecast').value,
+        budgetComment: document.getElementById('budgetComment').value,
+        achievements: document.getElementById('achievements').value,
+        blockers: document.getElementById('blockers').value,
+        nextSteps: document.getElementById('nextSteps').value
+    };
+}
+
+// ─── PROMPT BUILDER ───
+function buildPrompt(data, audience) {
+    const compact = densityCompact;
+    const densityHint = compact
+        ? '\n\nWICHTIG: Kompakt-Modus aktiv. Reduziere die Informationsdichte stark. Verwende Stichpunkte statt Fliesstext. Maximal 50% der normalen Laenge. Nur das Allerwichtigste.'
+        : '';
+
+    const audienceInstructions = {
+        team: `Zielgruppe: PROJEKTTEAM (intern)
+Stil: Detailliert, offen, technisch. Konkrete Aufgaben und Deadlines.
+Laenge: ${compact ? 'Kurz (max 200 Woerter, Stichpunkte)' : 'Ausfuehrlich (ca. 400-500 Woerter)'}
+Tonalitaet: Kollegial, transparent, handlungsorientiert
+Struktur: Fortschritt > Meilensteine > Budget > Risiken > Blocker > Naechste Schritte`,
+
+        steering: `Zielgruppe: LENKUNGSAUSSCHUSS
+Stil: Strukturiert, entscheidungsorientiert. Fokus auf Abweichungen.
+Laenge: ${compact ? 'Kurz (max 150 Woerter, Stichpunkte)' : 'Mittel (ca. 250-350 Woerter)'}
+Tonalitaet: Sachlich, professionell
+Struktur: Executive Summary > Ampelstatus > Abweichungen > Entscheidungsbedarf > Ausblick`,
+
+        clevel: `Zielgruppe: C-LEVEL / VORSTAND
+Stil: Maximal kompakt, strategisch. Kein technisches Detail.
+Laenge: ${compact ? 'Minimal (max 80 Woerter, 5-6 Bullet Points)' : 'Kurz (ca. 100-150 Woerter)'}
+Tonalitaet: Praegnant, geschaeftsorientiert
+Struktur: 1-Satz-Status > Ampel > Kernbotschaft > Handlungsbedarf`
+    };
+
+    return `Du bist ein erfahrener PMO-Experte und erstellst Projekt-Statusberichte.
+
+${audienceInstructions[audience]}${densityHint}
+
+PROJEKTDATEN:
+- Projektname: ${data.projectName || 'k.A.'}
+- Projektleitung: ${data.projectLead || 'k.A.'}
+- Berichtsdatum: ${data.reportDate || 'k.A.'}
+- Phase: ${data.projectPhase} | Fortschritt: ${data.progress || '?'}%
+
+AMPELSTATUS: Gesamt=${data.ampel.statusOverall||'?'} | Termine=${data.ampel.statusTime||'?'} | Budget=${data.ampel.statusBudget||'?'} | Qualitaet=${data.ampel.statusQuality||'?'}
+
+MEILENSTEINE:
+${data.milestones.length > 0 ? data.milestones.map(m => `- ${m.name} | ${m.date} | ${m.status}`).join('\n') : 'Keine'}
+
+BUDGET: Plan=${data.budgetPlan||'k.A.'} EUR | Ist=${data.budgetActual||'k.A.'} EUR | Prognose=${data.budgetForecast||'k.A.'} EUR
+Kommentar: ${data.budgetComment || '-'}
+
+RISIKEN:
+${data.risks.length > 0 ? data.risks.map(r => `- ${r.description} → ${r.mitigation}`).join('\n') : 'Keine'}
+
+FORTSCHRITTE: ${data.achievements || '-'}
+BLOCKER: ${data.blockers || '-'}
+NAECHSTE SCHRITTE: ${data.nextSteps || '-'}
+
+Erstelle den Bericht auf Deutsch. Verwende Ampel-Emoji (🟢🟡🔴). Formatiere mit ### fuer Ueberschriften.`;
+}
+
+// ─── LLM CALL ───
+async function callLLM(prompt) {
+    const apiKey = document.getElementById('apiKey').value;
+    const model = document.getElementById('modelSelect').value;
+    if (!apiKey) throw new Error('Bitte OpenAI API Key eingeben');
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], temperature: 0.7, max_tokens: 1500 })
+    });
+
+    if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error?.message || 'API-Fehler');
+    }
+    return (await response.json()).choices[0].message.content;
+}
+
+function markdownToHtml(md) {
+    return md
+        .replace(/### (.+)/g, '<h3>$1</h3>')
+        .replace(/## (.+)/g, '<h3>$1</h3>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/🟢/g, '<span class="ampel-inline ampel-green">🟢 GRUEN</span>')
+        .replace(/🟡/g, '<span class="ampel-inline ampel-yellow">🟡 GELB</span>')
+        .replace(/🔴/g, '<span class="ampel-inline ampel-red">🔴 ROT</span>')
+        .replace(/\n/g, '<br>');
+}
+
+// ─── GENERATE ───
+async function generate() {
+    const btn = document.getElementById('generateBtn');
+    const output = document.getElementById('output');
+    const data = collectData();
+    if (!data.projectName) { alert('Bitte Projektnamen eingeben.'); return; }
+
+    btn.disabled = true;
+    btn.classList.add('loading');
+
+    try {
+        const audiences = ['team', 'steering', 'clevel'];
+        const labels = ['Team', 'Lenkungsausschuss', 'C-Level'];
+        for (let i = 0; i < 3; i++) {
+            btn.textContent = `${labels[i]}-Bericht... (${i+1}/3)`;
+            const result = await callLLM(buildPrompt(data, audiences[i]));
+            reportsRaw[audiences[i]] = result;
+            reports[audiences[i]] = markdownToHtml(result);
+        }
+        output.innerHTML = reports[currentTab];
+    } catch (err) {
+        output.innerHTML = `<div style="color:var(--danger);padding:1rem;">Fehler: ${err.message}</div>`;
+    }
+    btn.textContent = 'Alle 3 Berichte generieren';
+    btn.disabled = false;
+    btn.classList.remove('loading');
+}
+
+// ─── COPY ───
+function copyReport() {
+    const text = document.getElementById('output').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target.closest('.action-btn');
+        const orig = btn.innerHTML;
+        btn.innerHTML = '✅ Kopiert!';
+        setTimeout(() => btn.innerHTML = orig, 2000);
+    });
+}
+
+// ─── PDF DOWNLOAD (ONE-PAGER) ───
+function downloadPDF() {
+    const data = collectData();
+    if (!data.projectName) { alert('Bitte Projektnamen eingeben.'); return; }
+
+    const ac = (val) => {
+        if (val === 'gruen') return { bg: '#ecfdf5', color: '#10b981', label: 'GRUEN' };
+        if (val === 'gelb') return { bg: '#fffbeb', color: '#f59e0b', label: 'GELB' };
+        if (val === 'rot') return { bg: '#fef2f2', color: '#ef4444', label: 'ROT' };
+        return { bg: '#f1f5f9', color: '#94a3b8', label: 'k.A.' };
+    };
+    const a = (f) => ac(data.ampel[f]);
+    const fmt = (v) => v ? Number(v).toLocaleString('de-DE') + ' EUR' : 'k.A.';
+    const dc = (s) => s==='erledigt'?'#10b981':s==='in Arbeit'?'#f59e0b':s==='gefaehrdet'?'#ef4444':'#94a3b8';
+    const bd = data.budgetPlan && data.budgetForecast ? ((Number(data.budgetForecast)-Number(data.budgetPlan))/Number(data.budgetPlan)*100).toFixed(1) : null;
+    const bdH = bd!==null ? '<span style="color:'+(Number(bd)>0?'#ef4444':'#10b981')+';font-weight:700;font-size:12px;">'+(Number(bd)>0?'+':'')+bd+'%</span>' : '';
+
+    // Open a real visible window for html2canvas to work
+    const w = window.open('', '_blank', 'width=820,height=1200');
+    w.document.write(`<!DOCTYPE html><html><head>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+        <style>*{margin:0;padding:0;box-sizing:border-box;}body{font-family:Inter,system-ui,sans-serif;background:white;}</style>
+    </head><body>
+    <div id="pdfTarget" style="padding:40px;width:794px;min-height:1100px;background:white;color:#0f172a;font-family:Inter,system-ui,sans-serif;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #e6007e;padding-bottom:16px;margin-bottom:20px;">
+            <div>
+                <h1 style="font-size:20px;color:#0f172a;margin:0;">${data.projectName}</h1>
+                <div style="font-size:11px;color:#64748b;margin-top:4px;">Phase: ${data.projectPhase} &middot; Fortschritt: ${data.progress||'?'}%</div>
+            </div>
+            <div style="font-size:11px;color:#64748b;text-align:right;line-height:1.6;">
+                <strong style="color:#0f172a;">Statusbericht</strong><br>${data.reportDate}<br>PL: ${data.projectLead||'k.A.'}
+            </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:20px;">
+            <div style="flex:1;padding:12px;border-radius:10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;background:${a('statusOverall').bg};color:${a('statusOverall').color};">GESAMT<br>${a('statusOverall').label}</div>
+            <div style="flex:1;padding:12px;border-radius:10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;background:${a('statusTime').bg};color:${a('statusTime').color};">TERMINE<br>${a('statusTime').label}</div>
+            <div style="flex:1;padding:12px;border-radius:10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;background:${a('statusBudget').bg};color:${a('statusBudget').color};">BUDGET<br>${a('statusBudget').label}</div>
+            <div style="flex:1;padding:12px;border-radius:10px;text-align:center;font-size:11px;font-weight:700;text-transform:uppercase;background:${a('statusQuality').bg};color:${a('statusQuality').color};">QUALITAET<br>${a('statusQuality').label}</div>
+        </div>
+        <div style="margin-bottom:16px;">
+            <h2 style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#e6007e;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin:0 0 8px 0;">Budget</h2>
+            <div style="display:flex;gap:10px;margin-bottom:8px;">
+                <div style="flex:1;background:#f1f5f9;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:16px;font-weight:800;">${fmt(data.budgetPlan)}</div><div style="font-size:9px;text-transform:uppercase;color:#64748b;margin-top:2px;">Plan</div></div>
+                <div style="flex:1;background:#f1f5f9;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:16px;font-weight:800;">${fmt(data.budgetActual)}</div><div style="font-size:9px;text-transform:uppercase;color:#64748b;margin-top:2px;">Ist</div></div>
+                <div style="flex:1;background:#f1f5f9;padding:10px;border-radius:8px;text-align:center;"><div style="font-size:16px;font-weight:800;">${fmt(data.budgetForecast)}</div><div style="font-size:9px;text-transform:uppercase;color:#64748b;margin-top:2px;">Prognose ${bdH}</div></div>
+            </div>
+            ${data.budgetComment ? '<p style="font-size:10px;color:#64748b;margin:4px 0 0 0;">'+data.budgetComment+'</p>' : ''}
+        </div>
+        ${data.milestones.length > 0 ? '<div style="margin-bottom:16px;"><h2 style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#e6007e;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin:0 0 8px 0;">Meilensteine</h2><table style="width:100%;border-collapse:collapse;font-size:11px;"><tr><th style="background:#f1f5f9;padding:6px 10px;text-align:left;font-weight:700;font-size:9px;text-transform:uppercase;color:#64748b;">Meilenstein</th><th style="background:#f1f5f9;padding:6px 10px;text-align:left;font-weight:700;font-size:9px;text-transform:uppercase;color:#64748b;">Termin</th><th style="background:#f1f5f9;padding:6px 10px;text-align:left;font-weight:700;font-size:9px;text-transform:uppercase;color:#64748b;">Status</th></tr>'+data.milestones.map(m => '<tr><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;">'+m.name+'</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;">'+m.date+'</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;"><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:'+dc(m.status)+';margin-right:4px;vertical-align:middle;"></span>'+m.status+'</td></tr>').join('')+'</table></div>' : ''}
+        ${data.risks.length > 0 ? '<div style="margin-bottom:16px;"><h2 style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#e6007e;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin:0 0 8px 0;">Risiken &amp; Massnahmen</h2><table style="width:100%;border-collapse:collapse;font-size:11px;"><tr><th style="background:#f1f5f9;padding:6px 10px;text-align:left;font-weight:700;font-size:9px;text-transform:uppercase;color:#64748b;">Risiko</th><th style="background:#f1f5f9;padding:6px 10px;text-align:left;font-weight:700;font-size:9px;text-transform:uppercase;color:#64748b;">Massnahme</th></tr>'+data.risks.map(r => '<tr><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;">'+r.description+'</td><td style="padding:6px 10px;border-bottom:1px solid #f1f5f9;">'+r.mitigation+'</td></tr>').join('')+'</table></div>' : ''}
+        ${data.achievements ? '<div style="margin-bottom:16px;"><h2 style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#e6007e;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin:0 0 8px 0;">Erfolge</h2><p style="font-size:11px;line-height:1.7;margin:0;">'+data.achievements+'</p></div>' : ''}
+        ${data.blockers ? '<div style="margin-bottom:16px;"><h2 style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#e6007e;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin:0 0 8px 0;">Blocker</h2><p style="font-size:11px;line-height:1.7;margin:0;">'+data.blockers+'</p></div>' : ''}
+        ${data.nextSteps ? '<div style="margin-bottom:16px;"><h2 style="font-size:12px;text-transform:uppercase;letter-spacing:0.06em;color:#e6007e;border-bottom:1px solid #e2e8f0;padding-bottom:4px;margin:0 0 8px 0;">Naechste Schritte</h2><p style="font-size:11px;line-height:1.7;margin:0;">'+data.nextSteps+'</p></div>' : ''}
+        <div style="margin-top:20px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:9px;color:#94a3b8;display:flex;justify-content:space-between;">
+            <span>Erstellt mit PM Statusbericht-Generator &middot; GPM Focus 2025</span>
+            <span>${data.reportDate}</span>
+        </div>
+    </div>
+    <script>
+        window.onload = function() {
+            var el = document.getElementById('pdfTarget');
+            html2pdf().set({
+                margin: 0,
+                filename: 'Statusbericht_${data.projectName.replace(/\s+/g,'_').replace(/'/g,'')}_${data.reportDate}.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'px', format: [794, 1123], orientation: 'portrait' }
+            }).from(el).save().then(function() { window.close(); });
+        };
+    <\/script>
+    </body></html>`);
+    w.document.close();
+}
+
+// ─── DASHBOARD ───
+function updateDashboard() {
+    const data = collectData();
+
+    // Stat cards
+    document.getElementById('dashProgress').textContent = data.progress ? data.progress + '%' : '--';
+
+    if (data.budgetPlan && data.budgetForecast) {
+        const delta = ((Number(data.budgetForecast) - Number(data.budgetPlan)) / Number(data.budgetPlan) * 100).toFixed(1);
+        document.getElementById('dashBudgetDelta').textContent = (delta > 0 ? '+' : '') + delta + '%';
+        const card = document.getElementById('dashBudgetCard');
+        card.className = 'stat-card ' + (delta > 5 ? 'red' : delta > 0 ? 'yellow' : 'green');
+    }
+
+    const msTotal = data.milestones.length;
+    const msDone = data.milestones.filter(m => m.status === 'erledigt').length;
+    document.getElementById('dashMilestoneDone').textContent = msTotal > 0 ? msDone + '/' + msTotal : '--';
+    const msCard = document.getElementById('dashMilestoneCard');
+    if (msTotal > 0) msCard.className = 'stat-card ' + (msDone === msTotal ? 'green' : msDone > 0 ? 'yellow' : 'red');
+
+    document.getElementById('dashRiskCount').textContent = data.risks.length || '0';
+    const rCard = document.getElementById('dashRiskCard');
+    rCard.className = 'stat-card ' + (data.risks.length === 0 ? 'green' : data.risks.length <= 2 ? 'yellow' : 'red');
+
+    // Ampel grid
+    const ampelGrid = document.getElementById('dashAmpelGrid');
+    const fields = [
+        { key: 'statusOverall', label: 'Gesamt' },
+        { key: 'statusTime', label: 'Termine' },
+        { key: 'statusBudget', label: 'Budget' },
+        { key: 'statusQuality', label: 'Qualitaet' }
+    ];
+    ampelGrid.innerHTML = fields.map(f => {
+        const v = data.ampel[f.key];
+        const color = v === 'gruen' ? 'var(--success)' : v === 'gelb' ? 'var(--warning)' : v === 'rot' ? 'var(--danger)' : 'var(--text-muted)';
+        const bg = v === 'gruen' ? 'var(--success-bg)' : v === 'gelb' ? 'var(--warning-bg)' : v === 'rot' ? 'var(--danger-bg)' : 'var(--border-light)';
+        return `<div style="background:${bg};color:${color};padding:1rem;border-radius:12px;text-align:center;font-weight:700;font-size:0.9rem;border:2px solid ${color}20;">
+            <div style="font-size:0.7rem;text-transform:uppercase;letter-spacing:0.06em;opacity:0.8;margin-bottom:0.3rem;font-weight:600;">${f.label}</div>
+            ${v === 'gruen' ? '🟢 GRUEN' : v === 'gelb' ? '🟡 GELB' : v === 'rot' ? '🔴 ROT' : '— k.A.'}
+        </div>`;
+    }).join('');
+
+    // Charts
+    renderCharts(data);
+}
+
+function renderCharts(data) {
+    // Destroy existing
+    Object.values(charts).forEach(c => c.destroy());
+    charts = {};
+
+    const progressVal = Number(data.progress) || 0;
+
+    // Progress Donut
+    charts.progress = new Chart(document.getElementById('chartProgress'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Erledigt', 'Offen'],
+            datasets: [{
+                data: [progressVal, 100 - progressVal],
+                backgroundColor: ['#e6007e', '#e2e8f0'],
+                borderWidth: 0,
+                cutout: '72%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: true }
+            }
+        },
+        plugins: [{
+            id: 'centerText',
+            beforeDraw(chart) {
+                const { ctx, chartArea: { width, height, top, left } } = chart;
+                ctx.save();
+                ctx.font = 'bold 28px Inter, sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(progressVal + '%', left + width/2, top + height/2);
+                ctx.restore();
+            }
+        }]
+    });
+
+    // Budget Donut
+    const bp = Number(data.budgetPlan) || 1;
+    const ba = Number(data.budgetActual) || 0;
+    const bf = Number(data.budgetForecast) || 0;
+
+    charts.budget = new Chart(document.getElementById('chartBudget'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Ist-Kosten', 'Verbleibend (Prognose)', 'Ueber Plan'],
+            datasets: [{
+                data: bf > bp
+                    ? [Math.min(ba, bp), Math.max(0, bp - ba), bf - bp]
+                    : [ba, Math.max(0, bf - ba), 0],
+                backgroundColor: ['#3b82f6', '#e2e8f0', '#ef4444'],
+                borderWidth: 0,
+                cutout: '72%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => ctx.label + ': ' + Number(ctx.raw).toLocaleString('de-DE') + ' EUR'
+                    }
+                }
+            }
+        },
+        plugins: [{
+            id: 'centerBudget',
+            beforeDraw(chart) {
+                const { ctx, chartArea: { width, height, top, left } } = chart;
+                ctx.save();
+                const pct = bp > 0 ? ((ba / bp) * 100).toFixed(0) : '0';
+                ctx.font = 'bold 24px Inter, sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(pct + '%', left + width/2, top + height/2 - 6);
+                ctx.font = '11px Inter, sans-serif';
+                ctx.fillStyle = '#64748b';
+                ctx.fillText('verbraucht', left + width/2, top + height/2 + 14);
+                ctx.restore();
+            }
+        }]
+    });
+
+    // Milestone Donut
+    const ms = data.milestones;
+    const msErledigt = ms.filter(m => m.status === 'erledigt').length;
+    const msArbeit = ms.filter(m => m.status === 'in Arbeit').length;
+    const msGefaehrdet = ms.filter(m => m.status === 'gefaehrdet').length;
+    const msOffen = ms.filter(m => m.status === 'offen').length;
+
+    charts.milestones = new Chart(document.getElementById('chartMilestones'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Erledigt', 'In Arbeit', 'Gefaehrdet', 'Offen'],
+            datasets: [{
+                data: [msErledigt, msArbeit, msGefaehrdet, msOffen],
+                backgroundColor: ['#10b981', '#f59e0b', '#ef4444', '#cbd5e1'],
+                borderWidth: 0,
+                cutout: '72%'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: true }
+            }
+        },
+        plugins: [{
+            id: 'centerMS',
+            beforeDraw(chart) {
+                const { ctx, chartArea: { width, height, top, left } } = chart;
+                ctx.save();
+                ctx.font = 'bold 28px Inter, sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(ms.length, left + width/2, top + height/2 - 6);
+                ctx.font = '11px Inter, sans-serif';
+                ctx.fillStyle = '#64748b';
+                ctx.fillText('Meilensteine', left + width/2, top + height/2 + 14);
+                ctx.restore();
+            }
+        }]
+    });
+}
+
+// ─── EXAMPLE DATA ───
+function loadExample() {
+    document.getElementById('projectName').value = 'Digitalisierung Kundenportal';
+    document.getElementById('projectLead').value = 'Maria Schmidt';
+    document.getElementById('progress').value = '62';
+    document.getElementById('budgetPlan').value = '480000';
+    document.getElementById('budgetActual').value = '310000';
+    document.getElementById('budgetForecast').value = '520000';
+    document.getElementById('budgetComment').value = 'Cloud-Lizenzkosten 15% ueber Plan. Nachverhandlung mit Anbieter laeuft.';
+    document.getElementById('achievements').value = 'API-Integration Phase 1 abgeschlossen. Performance-Tests bestanden. Pilotgruppe (25 User) positiv.';
+    document.getElementById('blockers').value = 'Datenmigration Alt-System verzoegert (Datenqualitaet). Externer Dienstleister hat Kapazitaetsengpass bis KW 16.';
+    document.getElementById('nextSteps').value = 'Go-Live Pilotgruppe 2 (KW 15). Lasttest mit 500 simulierten Usern. Stakeholder-Review Usability.';
+
+    document.querySelector('[data-field="statusOverall"] .yellow').click();
+    document.querySelector('[data-field="statusTime"] .yellow').click();
+    document.querySelector('[data-field="statusBudget"] .red').click();
+    document.querySelector('[data-field="statusQuality"] .green').click();
+
+    const mList = document.getElementById('milestoneList');
+    mList.innerHTML = '';
+    [
+        ['Anforderungsanalyse', '2025-01-15', 'erledigt'],
+        ['API-Integration Phase 1', '2025-02-28', 'erledigt'],
+        ['Datenmigration', '2025-03-15', 'gefaehrdet'],
+        ['Go-Live Pilot', '2025-04-01', 'in Arbeit'],
+        ['Rollout Gesamtorganisation', '2025-05-15', 'offen']
+    ].forEach(([name, date, status]) => {
+        const item = document.createElement('div');
+        item.className = 'milestone-item';
+        item.innerHTML = `<input type="text" value="${name}" /><input type="date" value="${date}" />
+            <select>${['erledigt','in Arbeit','gefaehrdet','offen'].map(s => `<option value="${s}" ${s===status?'selected':''}>${s.charAt(0).toUpperCase()+s.slice(1)}</option>`).join('')}</select>
+            <button class="btn-remove" onclick="this.parentElement.remove()">&times;</button>`;
+        mList.appendChild(item);
+    });
+
+    const rList = document.getElementById('riskList');
+    rList.innerHTML = '';
+    [
+        ['Datenqualitaet Altsystem blockiert Migration', 'Datenbereinigung priorisiert, Task Force eingerichtet'],
+        ['Kapazitaetsengpass ext. Dienstleister', 'Eskalation an Einkauf, Alternative evaluieren'],
+        ['Budget-Ueberschreitung Cloud-Lizenzen', 'Nachverhandlung Rahmenvertrag bis KW 14']
+    ].forEach(([desc, mit]) => {
+        const item = document.createElement('div');
+        item.className = 'risk-item';
+        item.innerHTML = `<input type="text" value="${desc}" /><input type="text" value="${mit}" />
+            <button class="btn-remove" onclick="this.parentElement.remove()">&times;</button>`;
+        rList.appendChild(item);
+    });
+}
+</script>
+</body>
+</html>
